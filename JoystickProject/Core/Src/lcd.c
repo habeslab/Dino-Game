@@ -114,6 +114,26 @@ void Lcd_define_char(Lcd_HandleTypeDef * lcd, uint8_t code, uint8_t bitmap[]){
 
 }
 
+/*
+ * Write the Data on Display ( it is different to write String )
+ */
+void Lcd_data(Lcd_HandleTypeDef * lcd, uint8_t data)
+{
+	HAL_GPIO_WritePin(lcd->rs_port, lcd->rs_pin, LCD_DATA_REG);			// Write to data register
+
+	if(lcd->mode == LCD_4_BIT_MODE)
+	{
+		lcd_write(lcd, data >> 4, LCD_NIB);
+		lcd_write(lcd, data & 0x0F, LCD_NIB);
+	}
+	else
+	{
+		lcd_write(lcd, data, LCD_BYTE);
+	}
+
+}
+
+
 
 /************************************** Static function definition **************************************/
 
@@ -173,21 +193,7 @@ void Lcd_write_data(Lcd_HandleTypeDef * lcd, uint8_t data)
 }
 
 
-void Lcd_write_data_nostatic(Lcd_HandleTypeDef * lcd, uint8_t data)
-{
-	HAL_GPIO_WritePin(lcd->rs_port, lcd->rs_pin, LCD_DATA_REG);			// Write to data register
 
-	if(lcd->mode == LCD_4_BIT_MODE)
-	{
-		lcd_write(lcd, data >> 4, LCD_NIB);
-		lcd_write(lcd, data & 0x0F, LCD_NIB);
-	}
-	else
-	{
-		lcd_write(lcd, data, LCD_BYTE);
-	}
-
-}
 
 
 /**
