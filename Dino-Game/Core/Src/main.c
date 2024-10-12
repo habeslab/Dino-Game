@@ -17,15 +17,17 @@
  */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
+
 #include "main.h"
 #include <stdio.h>
-#include "lcd.h"
-#include <stdbool.h>
-#include <stdint.h>
-#include "stm32f4xx_hal.h"
 #include <stdint.h>
 #include <stdbool.h>
 #include <math.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include "lcd.h"
+#include "stm32f4xx_hal.h"
+
 
 
 
@@ -99,17 +101,12 @@ int dino_bird_appeared = 0;
 // Dino Life
 bool dino_dead = false;
 
-
-
-
-
-
-const int dino_jump_duration = 4; // Quantità di frame che il dinosauro rimane in aria
+const int dino_jump_duration = 4; // Number of frame that dino stay up with jump
 
 // Count JUMP time
-int dino_jump_time = 0; // Quando è 0, il dinosauro è a terra
+int dino_jump_time = 0; // Dino is down when the value is 0
 
-uint8_t animation_tick = 0; // Valore temporaneo per l'animazione
+uint8_t animation_tick = 0; // Temporary value for the animation
 
 
 
