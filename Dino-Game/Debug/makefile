@@ -60,8 +60,8 @@ all: main-build
 main-build: Dino-Game.elf secondary-outputs
 
 # Tool invocations
-Dino-Game.elf Dino-Game.map: $(OBJS) $(USER_OBJS) C:\Users\umber\Progetti\Dino-Game\JoystickProject\STM32F401RETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "Dino-Game.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\umber\Progetti\Dino-Game\JoystickProject\STM32F401RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Dino-Game.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Dino-Game.elf Dino-Game.map: $(OBJS) $(USER_OBJS) C:\Users\umber\Progetti\Dino-Game\Dino-Game\STM32F401RETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "Dino-Game.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\umber\Progetti\Dino-Game\Dino-Game\STM32F401RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Dino-Game.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
