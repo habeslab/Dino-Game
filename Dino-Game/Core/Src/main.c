@@ -29,17 +29,6 @@
 #include "stm32f4xx_hal.h"
 
 
-
-
-
-
-
-
-
-
-
-
-
 // Definizione delle variabili globali
 
 ADC_HandleTypeDef hadc1;
