@@ -133,6 +133,10 @@ Take a look also at the pin analog and digital that we need to connect
   </table>
 </p>
 
+
+![Hardware Connection](./docs/images/hardware-connection-final.jpeg)
+
+
 ## 3. Install and Use 🎮
 
 After you have connected all the wires and the sensor to the board, as shown in the schema, you can clone our repository and install the program on your board using **STM32CubeIDE**.
