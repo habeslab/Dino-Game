@@ -1,7 +1,9 @@
 #ifndef TYPES_H
 #define TYPES_H
 
-#define MAX_OBSTACLES 10 // Maximum number of obstacles that can be present in the game
+#define MAX_OBSTACLES 300  // Maximum number of obstacles that can be present in the game
+#define MIN_OBSTACLE_DISTANCE 3
+
 
 #include <stdbool.h> // Include standard boolean type definitions
 

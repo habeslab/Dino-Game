@@ -49,5 +49,12 @@ int joystick_down(uint32_t *VR);
  */
 int joystick_stable(uint32_t *VR);
 
+
+int joystick_left(uint32_t *VR);
+
+int joystick_right(uint32_t *VR);
+
+
+
 #endif // JOYSTICK_H
 

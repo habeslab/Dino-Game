@@ -102,6 +102,8 @@ int main(void) {
     Obstacles obstacles; // Create an Obstacles object
     game_init(&lcd, &dino, &obstacles); // Initialize the game
 
+    int dino_difficulty = 200; // Initial delay
+    int max_dino_difficulty = 20; // Minimum delay
     // Main game loop
     while (1) {
         // Update joystick input commands
@@ -131,16 +133,15 @@ int main(void) {
             }
         }
 
-        // Increment the score
-        score += 1;
 
         // Difficulty settings - decrease delay to increase game speed
-        int dino_difficulty = 200; // Initial delay
-        int max_dino_difficulty = 30; // Minimum delay
 
+        // Increment the score
+        score += 1;
+        // Dino difficulty settings
         HAL_Delay(dino_difficulty); // Delay for the current difficulty level
-        if (dino_difficulty > max_dino_difficulty) {
-            dino_difficulty -= 2; // Decrease difficulty level (increase speed)
+        if (dino_difficulty > max_dino_difficulty && dino_difficulty>50) {
+            dino_difficulty -= 1; // Decrease difficulty level (increase speed)
         }
     }
 

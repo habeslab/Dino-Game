@@ -38,3 +38,22 @@ int joystick_stable(uint32_t *VR) {
     return (joy_Y>=3000 && joy_Y<=3200) ? 1: 0;
 }
 
+int joystick_left(uint32_t *VR) {
+    // Leggi il valore del joystick dall'asse Y
+    int joy_X = VR[0];
+    //serial_print("Sono qui nel joystick-down() , value : %d\n",joy_Y);
+
+    return (joy_X>3200) ? 1: 0;
+}
+
+int joystick_right(uint32_t *VR) {
+    // Leggi il valore del joystick dall'asse Y
+    int joy_X = VR[0];
+    //serial_print("Sono qui nel joystick-up() , value : %d\n",joy_Y);
+
+    // Soglia per rilevare il movimento verso l'alto (da calibrare)
+    int threshold_up = 500;
+
+    // Ritorna 1 se il joystick è spostato verso l'alto, altrimenti 0
+    return (joy_X < threshold_up) ? 1 : 0;
+}

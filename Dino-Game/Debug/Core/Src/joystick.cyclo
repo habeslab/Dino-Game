@@ -2,3 +2,5 @@
 ../Core/Src/joystick.c:11:5:joystick_up	1
 ../Core/Src/joystick.c:24:5:joystick_down	1
 ../Core/Src/joystick.c:33:5:joystick_stable	3
+../Core/Src/joystick.c:41:5:joystick_left	1
+../Core/Src/joystick.c:49:5:joystick_right	1
