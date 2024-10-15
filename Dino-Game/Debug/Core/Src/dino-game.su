@@ -1,0 +1,5 @@
+../Core/Src/dino-game.c:8:6:game_init	32	static
+../Core/Src/dino-game.c:26:6:game_update	32	static
+../Core/Src/dino-game.c:64:6:game_draw	32	static
+../Core/Src/dino-game.c:119:5:check_collision	24	static
+../Core/Src/dino-game.c:130:6:set_dino_char	80	static

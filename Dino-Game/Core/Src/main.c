@@ -17,18 +17,19 @@
  */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
-
+#include "dino-game.h"
 #include "main.h"
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <math.h>
-#include <stdbool.h>
 #include <stdlib.h>
-#include <stdarg.h>
+
 
 #include "lcd.h"
 #include "types.h"
+#include "joystick.h"
+#include "utils.h"
+
 #include "stm32f4xx_hal.h"
 
 
@@ -51,321 +52,105 @@ static void MX_ADC1_Init(void);
 static void MX_DMA_Init(void);
 static void MX_USART2_UART_Init(void);
 
-void game_init(Lcd_HandleTypeDef *lcd, Dino *dino, Obstacles *obstacles);
-void game_update(Lcd_HandleTypeDef *lcd,Dino *dino, Obstacles *obstacles);
-void game_draw(Lcd_HandleTypeDef *lcd, Dino *dino, Obstacles *obstacles);
-int check_collision(Dino *dino, Obstacles *obstacles);
 
-void set_dino_char(Lcd_HandleTypeDef *lcd);
-
-void serial_print(const char *format, ...);
-
-void joystick_init(ADC_HandleTypeDef *hadc1, uint32_t *VR);
-int joystick_up(uint32_t *VR);
-int joystick_down(uint32_t *VR);
-int joystick_stable(uint32_t *VR);
-
-
-int score = 0;
-
+// Global variable to hold the score
+volatile int score = 0;
 
 int main(void) {
-    // HAL configuration
+    // HAL (Hardware Abstraction Layer) initialization
     HAL_Init();
 
     // System Clock Configuration
     SystemClock_Config();
 
-    // GPIO configuration
+    // GPIO (General Purpose Input/Output) configuration
     MX_GPIO_Init();
 
-    // Init DMA - Configuration
+    // Initialize DMA (Direct Memory Access) - Configuration
     MX_DMA_Init();
 
-    // Init ADC ( Analog - to - Digital Conversion )
+    // Initialize ADC (Analog-to-Digital Converter)
     MX_ADC1_Init();
 
-    // Setup USART Configuration
+    // Setup USART (Universal Synchronous/Asynchronous Receiver-Transmitter) Configuration
     MX_USART2_UART_Init();
 
-    // Configurazione delle porte e dei pin del display LCD
+    // Configuration for the LCD display ports and pins
     Lcd_PortType ports[] = { GPIOC, GPIOB, GPIOA, GPIOA };
     Lcd_PinType pins[] = { GPIO_PIN_7, GPIO_PIN_6, GPIO_PIN_7, GPIO_PIN_6 };
+
+    // Create the LCD instance with the defined ports and pins
     lcd = Lcd_create(ports, pins, GPIOB, GPIO_PIN_5, GPIOB, GPIO_PIN_4, LCD_4_BIT_MODE);
 
-    // Inizializzazione del display LCD
+    // Initialize the LCD display
     Lcd_init(&lcd);
 
-    // Inizializzazione ADC con DMA
+    // Start ADC with DMA
     HAL_ADC_Start_DMA(&hadc1, VR, 2);
 
-    // Mostra il messaggio di benvenuto
-    Lcd_clear(&lcd);
-    Lcd_cursor(&lcd, 0, 1);
-    Lcd_string(&lcd, " Welcome in ");
-    Lcd_cursor(&lcd, 1, 1);
-    Lcd_string(&lcd, " Dino-Game ");
-    HAL_Delay(2000); // Mostra il messaggio di benvenuto per 2 secondi
-    Lcd_clear(&lcd);
+    // Show the welcome message
+    Lcd_clear(&lcd); // Clear the LCD display
+    Lcd_cursor(&lcd, 0, 1); // Set cursor to row 0, column 1
+    Lcd_string(&lcd, " Welcome in "); // Display welcome message
+    Lcd_cursor(&lcd, 1, 1); // Set cursor to row 1, column 1
+    Lcd_string(&lcd, " Dino-Game "); // Display game title
+    HAL_Delay(2000); // Show the welcome message for 2 seconds
+    Lcd_clear(&lcd); // Clear the LCD display
 
-    // Inizializza il gioco
-    Dino dino;
-    Obstacles obstacles;
-    game_init(&lcd, &dino, &obstacles);
+    // Initialize game structures
+    Dino dino; // Create a Dino object
+    Obstacles obstacles; // Create an Obstacles object
+    game_init(&lcd, &dino, &obstacles); // Initialize the game
 
-    // Ciclo principale del gioco
+    // Main game loop
     while (1) {
+        // Update joystick input commands
+        joystick_init(&hadc1, VR); // Initialize joystick with ADC
 
-    	joystick_init(&hadc1, VR);
+        // Update the game state
+        game_update(VR, &lcd, &dino, &obstacles);
 
-    	int joy_Y = VR[1];
-    	serial_print("Attuale valore di joy_Y : %d\n",joy_Y);
-    	// Aggiorna lo stato del gioco
-        game_update(&lcd, &dino, &obstacles);
+        // Draw the current game state on the LCD
         game_draw(&lcd, &dino, &obstacles);
 
-        // Controlla se c'è una collisione
-        if (check_collision(&dino, &obstacles)==1) {
-            Lcd_clear(&lcd);
-            Lcd_cursor(&lcd, 0, 0);
-            Lcd_string(&lcd, "Game Over!");
+        // Check for collisions
+        if (check_collision(&dino, &obstacles) == 1) {
+            Lcd_clear(&lcd); // Clear the display for Game Over message
+            Lcd_cursor(&lcd, 0, 0); // Set cursor to the top left corner
+            Lcd_string(&lcd, "Game Over!"); // Display Game Over message
 
+            // Prepare score string for display
             char score_str[16];
-            sprintf(score_str, "Score: %d", score);
-            Lcd_cursor(&lcd, 1, 0);
-            Lcd_string(&lcd, score_str);
+            sprintf(score_str, "Score: %d", score); // Format score into string
+            Lcd_cursor(&lcd, 1, 0); // Set cursor to row 1, column 0
+            Lcd_string(&lcd, score_str); // Display the score
 
+            // Infinite loop to hold the Game Over screen
             while (1) {
-                HAL_Delay(1000); // Mantiene la schermata di Game Over
+                HAL_Delay(1000); // Keep the Game Over screen for 1 second intervals
             }
         }
 
-        score += 1; // Incrementa il punteggio
+        // Increment the score
+        score += 1;
 
-        // Difficoltà del gioco - diminuzione del ritardo per aumentare la velocità
-        int dino_difficulty = 200;
-        int max_dino_difficulty = 30;
+        // Difficulty settings - decrease delay to increase game speed
+        int dino_difficulty = 200; // Initial delay
+        int max_dino_difficulty = 30; // Minimum delay
 
-        HAL_Delay(dino_difficulty);
+        HAL_Delay(dino_difficulty); // Delay for the current difficulty level
         if (dino_difficulty > max_dino_difficulty) {
-            dino_difficulty -= 2;
+            dino_difficulty -= 2; // Decrease difficulty level (increase speed)
         }
     }
 
-    return 0;
-}
-
-void game_init(Lcd_HandleTypeDef *lcd, Dino *dino, Obstacles *obstacles) {
-    Lcd_init(lcd);
-
-    set_dino_char(lcd); // Imposta i caratteri personalizzati
-
-    dino->position_row = 0;
-    dino->position_col = 0;
-    dino->jump = false;
-    dino->down = false;
-
-    for (int i = 0; i < MAX_OBSTACLES; i++) {
-        obstacles->position_row[i] = rand() % 2; // Genera ostacoli casualmente tra row 0 e row 1
-        obstacles->position_col[i] = 16 + (rand() % 32); // Genera ostacoli in posizioni casuali
-    }
-}
-
-
-
-void game_update(Lcd_HandleTypeDef *lcd, Dino *dino, Obstacles *obstacles) {
-    // Gestisci input dal joystick
-    if (joystick_up(VR) == 1) {
-
-    	serial_print("Sono qui! Dopo il Joystick_up\n");
-        dino->jump = true;
-        dino->down = false;
-        dino->position_row = 0;
-    }
-    else if (joystick_down(VR) == 1) {
-
-    	serial_print("Sono qui! Dopo il Joystick_down\n");
-        dino->jump = false;
-        dino->down = true;
-        dino->position_row = 1;
-
-    } else if(joystick_stable(VR) == 1 ){
-
-    	serial_print("Sono qui! Dopo il Joystick_stable\n");
-        dino->jump = false;
-        dino->down = false;
-        dino->position_row = 1;
-    }
-
-    // Muovi gli ostacoli
-    for (int i = 0; i < MAX_OBSTACLES; i++) {
-        obstacles->position_col[i]--;
-        if (obstacles->position_col[i] < 0) {
-            // Riposiziona l'ostacolo
-            obstacles->position_row[i] = rand() % 2; // Genera ostacoli casualmente tra row 0 e row 1
-            obstacles->position_col[i] = 16 + (rand() % 32);
-        }
-    }
+    return 0; // Return 0 (this line is never reached)
 }
 
 
 
 
-void game_draw(Lcd_HandleTypeDef *lcd, Dino *dino, Obstacles *obstacles) {
 
-	Lcd_clear(lcd);
-
-    // Draw sun
-	Lcd_cursor(lcd, 0, 15);
-	Lcd_write_data(lcd, 0); //sun
-
-
-    // Draw Dino
-
-    // CASE 1 : Normal Running
-    if ( (dino->jump== false) && (dino->down==false) && dino->position_row == 1) {
-
-        Lcd_cursor(lcd, dino->position_row, dino->position_col);
-        Lcd_string(lcd, "\x01"); // dino_run1
-    // CASE 2 : JUMP situation
-    }else if( (dino->jump==true) && dino->position_row==0){
-    	Lcd_cursor(lcd, dino->position_row, dino->position_col);
-		Lcd_string(lcd, "\x02"); // dino_run1
-    // CASE 3: DOWN situation
-    }else if( (dino->down == true) && dino->position_row==1){
-
-    	Lcd_cursor(lcd, dino->position_row, dino->position_col);
-		Lcd_string(lcd, "\x03"); // dino_down1
-
-    }
-
-    // Disegna gli ostacoli
-        for (int i = 0; i < MAX_OBSTACLES; i++) {
-            if (obstacles->position_col[i] < 16) { // Cambiato a 16 per includere la colonna 15
-                Lcd_cursor(lcd, obstacles->position_row[i], obstacles->position_col[i]);
-
-                // Genera ostacoli in base alla row
-                if (obstacles->position_row[i] == 1) {
-                    // Cactus devono essere nella row 0
-                    Lcd_string(lcd, "\x05"); // cactus
-                } else if (obstacles->position_row[i] == 0) {
-                    // Gli uccelli devono essere nella row 1
-                    switch (rand() % 2) {
-                        case 0:
-                            Lcd_string(lcd, "\x06"); // bird_top
-                            break;
-                        case 1:
-                            Lcd_string(lcd, "\x07"); // bird_bottom
-                            break;
-                    }
-                }
-            }
-        }
-}
-
-
-
-
-int check_collision(Dino *dino, Obstacles *obstacles) {
-    for (int i = 0; i < MAX_OBSTACLES; i++) {
-        if (dino->position_row == obstacles->position_row[i] && obstacles->position_col[i] == 0) {
-            return 1; // Collisione rilevata
-        }
-    }
-    return 0; // Nessuna collisione
-}
-
-
-
-void set_dino_char(Lcd_HandleTypeDef *lcd) {
-    uint8_t sun[8] = {
-        0x00, 0x00, 0x1C, 0x1F, 0x1F, 0x1F, 0x1C, 0x00
-    };
-    uint8_t dino_run1[8] = {
-        0x07, 0x05, 0x07, 0x04, 0x17, 0x1E, 0x0E, 0x1B
-    };
-    uint8_t dino_run2[8] = {
-        0x07, 0x05, 0x07, 0x04, 0x17, 0x1E, 0x0F, 0x0C
-    };
-    uint8_t cactus[8] = {
-        0x04, 0x04, 0x05, 0x15, 0x17, 0x1C, 0x04, 0x04
-    };
-    uint8_t dino_duck1[8] = {
-        0x00, 0x00, 0x03, 0x05, 0x17, 0x1E, 0x0F, 0x08
-    };
-    uint8_t dino_duck2[8] = {
-        0x00, 0x00, 0x03, 0x05, 0x17, 0x1E, 0x0E, 0x12
-    };
-    uint8_t bird_top[8] = {
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x07, 0x0E, 0x1C
-    };
-    uint8_t bird_bottom[8] = {
-        0x1C, 0x0E, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    };
-
-    Lcd_define_char(lcd, 0, sun);
-    Lcd_define_char(lcd, 1, dino_run1);
-    Lcd_define_char(lcd, 2, dino_run2);
-    Lcd_define_char(lcd, 3, dino_duck1);
-    Lcd_define_char(lcd, 4, dino_duck2);
-    Lcd_define_char(lcd, 5, cactus);
-    Lcd_define_char(lcd, 6, bird_top);
-    Lcd_define_char(lcd, 7, bird_bottom);
-}
-
-
-void serial_print(const char *format, ...) {
-    char buffer[100]; // Buffer per la stringa formattata
-    va_list args;     // Lista dei parametri variabili
-
-    // Inizializza la lista dei parametri
-    va_start(args, format);
-    // Format the string using vsnprintf to safely handle variable arguments
-    vsnprintf(buffer, sizeof(buffer), format, args);
-    va_end(args); // Chiude la lista dei parametri
-
-    // Invia il messaggio tramite UART
-    HAL_UART_Transmit(&huart2, (uint8_t *)buffer, strlen(buffer), HAL_MAX_DELAY);
-}
-
-
-
-void joystick_init(ADC_HandleTypeDef *hadc1, uint32_t *VR) {
-    // Inizializza il joystick (se necessario)
-    // La configurazione dell'ADC e del DMA dovrebbe essere già fatta nel main.c
-    HAL_ADC_Start_DMA(hadc1, VR, 2);
-}
-
-
-int joystick_up(uint32_t *VR) {
-    // Leggi il valore del joystick dall'asse Y
-    int joy_Y = VR[1];
-    //serial_print("Sono qui nel joystick-up() , value : %d\n",joy_Y);
-
-    // Soglia per rilevare il movimento verso l'alto (da calibrare)
-    int threshold_up = 500;
-
-    // Ritorna 1 se il joystick è spostato verso l'alto, altrimenti 0
-    return (joy_Y < threshold_up) ? 1 : 0;
-}
-
-
-int joystick_down(uint32_t *VR) {
-    // Leggi il valore del joystick dall'asse Y
-    int joy_Y = VR[1];
-    //serial_print("Sono qui nel joystick-down() , value : %d\n",joy_Y);
-
-    // Soglia per rilevare il movimento verso il basso (da calibrare)
-    return (joy_Y > 3200) ? 1 : 0;
-}
-
-int joystick_stable(uint32_t *VR) {
-    // Leggi il valore del joystick dall'asse Y
-    int joy_Y = VR[1];
-    //serial_print("Sono qui nel joystick-down() , value : %d\n",joy_Y);
-
-    return (joy_Y>=3000 && joy_Y<=3200) ? 1: 0;
-}
 
 
 /**

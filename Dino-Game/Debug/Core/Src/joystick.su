@@ -1,0 +1,4 @@
+../Core/Src/joystick.c:4:6:joystick_init	16	static
+../Core/Src/joystick.c:11:5:joystick_up	24	static
+../Core/Src/joystick.c:24:5:joystick_down	24	static
+../Core/Src/joystick.c:33:5:joystick_stable	24	static

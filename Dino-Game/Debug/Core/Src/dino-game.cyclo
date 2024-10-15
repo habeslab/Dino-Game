@@ -1,0 +1,5 @@
+../Core/Src/dino-game.c:8:6:game_init	2
+../Core/Src/dino-game.c:26:6:game_update	6
+../Core/Src/dino-game.c:64:6:game_draw	14
+../Core/Src/dino-game.c:119:5:check_collision	4
+../Core/Src/dino-game.c:130:6:set_dino_char	1
