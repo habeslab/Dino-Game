@@ -1,4 +1,4 @@
-# Do on your Own! :zap:
+# Do on your Own! ⚡
 
 Here there is a full example on how we have configured the pins, HAL and CMSIS of STM32Board
 
