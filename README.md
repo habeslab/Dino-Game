@@ -1,4 +1,4 @@
-# Dino-Game on STM32 :t-rex:
+# :t-rex: Dino-Game on STM32 :t-rex:
 
 This project implements a Dino-Game using the STM32F401RE development board, a 16x2 LCD display, and a joystick sensor. The game features a simple interface where a dinosaur dodges obstacles. This repository includes all the necessary code and documentation to recreate the project.
 

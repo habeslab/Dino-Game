@@ -43,6 +43,7 @@ After following the instructions to setting up the STM32 Board we can generate t
 - Set the **"Project Location"**
 - In the field **"Toolchain/IDE"** Set the IDE that you want use, for our purpouse select **"STM32CubeIDE"**
 <br>
+
 - Click **Generate Code**
 
 ![Generate Code](./cube-mx-images/generate-code.png)
