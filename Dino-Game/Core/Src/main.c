@@ -17,42 +17,32 @@
  */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
-
+#include "dino-game.h"
 #include "main.h"
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <math.h>
-#include <stdbool.h>
-#include <stdint.h>
+#include <stdlib.h>
+
+
 #include "lcd.h"
+#include "types.h"
+#include "joystick.h"
+#include "utils.h"
+
 #include "stm32f4xx_hal.h"
 
 
 // Definizione delle variabili globali
-
 ADC_HandleTypeDef hadc1;
+
 DMA_HandleTypeDef hdma_adc1;
+
 UART_HandleTypeDef huart2;
 
 Lcd_HandleTypeDef lcd;
 
 uint32_t VR[2];  // Buffer per i valori ADC
-
-volatile uint32_t joy_X = 0;
-volatile uint32_t joy_Y = 0;
-
-volatile bool joy_SW = false;
-
-int joy_SW_pin = 0; // Pin digitale connesso al pulsante del joystick
-
-int joy_X_pin = 0;  // Pin analogico connesso all'output X del joystick
-
-int joy_Y_pin = 0;  // Pin analogico connesso all'output Y del joystick
-
-
-
-
 
 
 /*---------------------------------------------------------------------------- Sytem Configuration Function --------------------------------------------------------------*/
@@ -63,389 +53,105 @@ static void MX_DMA_Init(void);
 static void MX_USART2_UART_Init(void);
 
 
-void read_joystick();
-void dino_game();
-void draw_dino_background();
-void dino_generate_obstacles();
-void set_dino_char();
-
-// Mat is position of the LCD display
-int mat[2][16] = {
-		{8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8},
-		{8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8}
-};
-
-// Score of the players
-int score = 0;
-
-// Variables that indicates the objects on the LCD display
-const int dino_object_max = 4;
-// Object that appear on the LCD display
-int dino_object_count = 0;
-// Cactus apperaed on the LCD display
-int dino_cactus_appeared = 0;
-// Bird Appeared on the LCD Display
-int dino_bird_appeared = 0;
-
-// Dino Life
-bool dino_dead = false;
-
-const int dino_jump_duration = 4; // Number of frame that dino stay up with jump
-
-// Count JUMP time
-int dino_jump_time = 0; // Dino is down when the value is 0
-
-uint8_t animation_tick = 0; // Temporary value for the animation
-
-
-
+// Global variable to hold the score
+volatile int score = 0;
 
 int main(void) {
+    // HAL (Hardware Abstraction Layer) initialization
+    HAL_Init();
 
-	// HAL configuration
-	HAL_Init();
+    // System Clock Configuration
+    SystemClock_Config();
 
-	// System Clock Configuration
-	SystemClock_Config();
+    // GPIO (General Purpose Input/Output) configuration
+    MX_GPIO_Init();
 
-	// GPIO configuration
-	MX_GPIO_Init();
+    // Initialize DMA (Direct Memory Access) - Configuration
+    MX_DMA_Init();
 
-	// Init DMA - Configuration
-	MX_DMA_Init();
+    // Initialize ADC (Analog-to-Digital Converter)
+    MX_ADC1_Init();
 
-	// Init ADC ( Analog - to - Digital Conversion
-	MX_ADC1_Init();
+    // Setup USART (Universal Synchronous/Asynchronous Receiver-Transmitter) Configuration
+    MX_USART2_UART_Init();
 
-	// Setup USART Configuration
-	MX_USART2_UART_Init();
+    // Configuration for the LCD display ports and pins
+    Lcd_PortType ports[] = { GPIOC, GPIOB, GPIOA, GPIOA };
+    Lcd_PinType pins[] = { GPIO_PIN_7, GPIO_PIN_6, GPIO_PIN_7, GPIO_PIN_6 };
 
+    // Create the LCD instance with the defined ports and pins
+    lcd = Lcd_create(ports, pins, GPIOB, GPIO_PIN_5, GPIOB, GPIO_PIN_4, LCD_4_BIT_MODE);
 
-	// Lcd_PortType ports[] = { D4_GPIO_Port, D5_GPIO_Port, D6_GPIO_Port, D7_GPIO_Port };
-	Lcd_PortType ports[] = { GPIOC, GPIOB, GPIOA, GPIOA };
-	// Lcd_PinType pins[] = {D4_Pin, D5_Pin, D6_Pin, D7_Pin};
-	Lcd_PinType pins[] = {GPIO_PIN_7, GPIO_PIN_6, GPIO_PIN_7, GPIO_PIN_6};
-	// Lcd_create(ports, pins, RS_GPIO_Port, RS_Pin, EN_GPIO_Port, EN_Pin, LCD_4_BIT_MODE);
-	lcd = Lcd_create(ports, pins, GPIOB, GPIO_PIN_5, GPIOB, GPIO_PIN_4, LCD_4_BIT_MODE);
-	// Init LCD Port
-	Lcd_init(&lcd);
+    // Initialize the LCD display
+    Lcd_init(&lcd);
 
-	// HAL configuration ADC in DMA
-	HAL_ADC_Start_DMA(&hadc1, VR, 2);
-
-	// DinoGame
-	set_dino_char();
-	// Setting - Cursor
-	Lcd_cursor(&lcd, 0, 1);
-	// Printing on LCD
-	Lcd_string(&lcd, " Welcome in ");
-
-	Lcd_cursor(&lcd, 1, 1);
-
-	Lcd_string(&lcd, " Dino-Game ");
-
-	HAL_Delay(600);
-	// Clear display LCD
-	Lcd_clear(&lcd);
-
-
-	while (1) {
-
-		// Difficulty of the game - Lower or Higher Speed
-		int dino_difficulty = 200;
-
-		int max_dino_difficulty = 30;
-
-		// Start Dino-GAME
-		dino_game();
-
-		score += 1;
-
-		if (dino_dead) {
-
-			Lcd_clear(&lcd);
-
-			// Setting cursor on LCD display
-			Lcd_cursor(&lcd, 1, 1);
-			// Write Data
-			Lcd_data(&lcd, 1);
-			HAL_Delay(100);
-
-			Lcd_clear(&lcd);
-			HAL_Delay(100);
-
-			// Setting the cursor
-			Lcd_cursor(&lcd, 1, 1);
-			Lcd_data(&lcd, 1);
-			HAL_Delay(100);
-
-			Lcd_clear(&lcd);
-			HAL_Delay(100);
-
-			Lcd_cursor(&lcd, 1, 1);
-			Lcd_data(&lcd, 1);
-			HAL_Delay(100);
-
-
-			Lcd_clear(&lcd);
-
-			char score_str[16];
-			// Debug - Printing Score
-			sprintf(score_str, "Score: %d", score);
-			// Printing Score on LCD display
-			Lcd_string(&lcd, score_str);
-
-			while (1) {
-				HAL_Delay(1000);
-			}
-		}
-
-		HAL_Delay(dino_difficulty);
-
-		if (dino_difficulty > max_dino_difficulty) {
-			dino_difficulty -= 2;
-		}
-	}
-}
-
-void read_joystick() {
-	// I valori dell'ADC vengono aggiornati dal DMA, quindi possiamo leggerli direttamente
-
+    // Start ADC with DMA
     HAL_ADC_Start_DMA(&hadc1, VR, 2);
-	joy_X = VR[0];
-	joy_Y = VR[1];
-	joy_SW = HAL_GPIO_ReadPin(GPIOA, joy_SW_pin);
 
+    // Show the welcome message
+    Lcd_clear(&lcd); // Clear the LCD display
+    Lcd_cursor(&lcd, 0, 1); // Set cursor to row 0, column 1
+    Lcd_string(&lcd, " Welcome in "); // Display welcome message
+    Lcd_cursor(&lcd, 1, 1); // Set cursor to row 1, column 1
+    Lcd_string(&lcd, " Dino-Game "); // Display game title
+    HAL_Delay(2000); // Show the welcome message for 2 seconds
+    Lcd_clear(&lcd); // Clear the LCD display
+
+    // Initialize game structures
+    Dino dino; // Create a Dino object
+    Obstacles obstacles; // Create an Obstacles object
+    game_init(&lcd, &dino, &obstacles); // Initialize the game
+
+    // Main game loop
+    while (1) {
+        // Update joystick input commands
+        joystick_init(&hadc1, VR); // Initialize joystick with ADC
+
+        // Update the game state
+        game_update(VR, &lcd, &dino, &obstacles);
+
+        // Draw the current game state on the LCD
+        game_draw(&lcd, &dino, &obstacles);
+
+        // Check for collisions
+        if (check_collision(&dino, &obstacles) == 1) {
+            Lcd_clear(&lcd); // Clear the display for Game Over message
+            Lcd_cursor(&lcd, 0, 0); // Set cursor to the top left corner
+            Lcd_string(&lcd, "Game Over!"); // Display Game Over message
+
+            // Prepare score string for display
+            char score_str[16];
+            sprintf(score_str, "Score: %d", score); // Format score into string
+            Lcd_cursor(&lcd, 1, 0); // Set cursor to row 1, column 0
+            Lcd_string(&lcd, score_str); // Display the score
+
+            // Infinite loop to hold the Game Over screen
+            while (1) {
+                HAL_Delay(1000); // Keep the Game Over screen for 1 second intervals
+            }
+        }
+
+        // Increment the score
+        score += 1;
+
+        // Difficulty settings - decrease delay to increase game speed
+        int dino_difficulty = 200; // Initial delay
+        int max_dino_difficulty = 30; // Minimum delay
+
+        HAL_Delay(dino_difficulty); // Delay for the current difficulty level
+        if (dino_difficulty > max_dino_difficulty) {
+            dino_difficulty -= 2; // Decrease difficulty level (increase speed)
+        }
+    }
+
+    return 0; // Return 0 (this line is never reached)
 }
 
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
-	if (hadc->Instance == hadc1.Instance) {
-		// Trasferimento completato, i valori in VR[0] e VR[1] sono aggiornati
-		// Potresti voler eseguire ulteriori operazioni qui, se necessario
-	}
-}
 
 
-void dino_game() {
-	// Read Joystick
-	read_joystick();
 
-	bool btnDown = (joy_X < 300);
-	bool btnUp = (joy_X > 700);
 
-	for (int i = 0; i < 2; i++) {
-		for (int j = 0; j < 15; j++) {
-			mat[i][j] = mat[i][j + 1];
-		}
-	}
 
-	if (mat[1][0] == 5 || mat[1][0] == 7) {
-		dino_object_count -= 1;
-	}
-	mat[0][15] = 8;
-	mat[1][15] = 8;
-
-	// Generate Obstacles on LCD display
-	dino_generate_obstacles();
-	// Draw dino BackGround
-	draw_dino_background();
-
-	if (btnDown == false && dino_jump_time == 0) {
-		// Set cursor position on the second row
-		Lcd_cursor(&lcd, 1, 1);
-		if (mat[1][1] == 7 || mat[1][1] == 5) {
-			dino_dead = true;
-		}
-		// write Lcd data on display
-		Lcd_data(&lcd, 1);
-	}
-	if (btnDown == false && dino_jump_time != 0) {
-
-		Lcd_cursor(&lcd, 1, 0);
-
-		if (mat[1][0] == 6) {
-			dino_dead = true;
-		}
-
-		Lcd_data(&lcd, 2);
-	}
-	if (btnUp == true && dino_jump_time == 0) {
-		dino_jump_time = dino_jump_duration;
-	}
-	if (btnDown == true) {
-
-		Lcd_cursor(&lcd, 1, 1);
-
-		if (mat[1][1] == 5) {
-			dino_dead = true;
-		}
-
-		Lcd_data(&lcd, 3); // Adjust to write the custom character
-		dino_jump_time = 0;
-	}
-
-	Lcd_cursor(&lcd, 15, 0);
-
-	Lcd_data(&lcd, 0);
-
-	dino_jump_time = (dino_jump_time > 0) ? dino_jump_time - 1 : 0;
-	animation_tick = (animation_tick == 0) ? 1 : 0;
-}
-
-void draw_dino_background() {
-	for (int i = 0; i < 2; i++) {
-		for (int j = 0; j < 16; j++) {
-			Lcd_cursor(&lcd, i, j);
-			if (mat[i][j] == 8) {
-				Lcd_string(&lcd, " ");
-			} else {
-				Lcd_data(&lcd, mat[i][j]);
-			}
-		}
-	}
-}
-
-void dino_generate_obstacles() {
-
-	bool cactus_spawn = false;
-	bool bird_spawn = false;
-	if (dino_cactus_appeared >= 3 && dino_bird_appeared >= 3) {
-		cactus_spawn = true;
-	}
-	if (dino_cactus_appeared >= 3 && dino_bird_appeared >= 3) {
-		bird_spawn = true;
-	}
-
-	int DinoRandNumber = rand() % 10 + 1;
-
-	if (DinoRandNumber < 4 && dino_object_count < dino_object_max) {
-
-		if (bird_spawn && cactus_spawn) {
-
-			int randint = rand() % 10 + 1;
-
-			if (randint < 5) {
-				mat[0][15] = 6;
-				mat[1][15] = 7;
-				dino_bird_appeared = -1;
-			} else {
-				mat[1][15] = 5;
-				dino_cactus_appeared = -1;
-			}
-			dino_object_count += 1;
-		}
-
-		if (bird_spawn && !cactus_spawn) {
-			mat[0][15] = 6;
-			mat[1][15] = 7;
-			dino_bird_appeared = -1;
-			dino_object_count += 1;
-		}
-
-		if (!bird_spawn && cactus_spawn) {
-			mat[1][15] = 5;
-			dino_cactus_appeared = -1;
-			dino_object_count += 1;
-		}
-	}
-	dino_bird_appeared += 1;
-	dino_cactus_appeared += 1;
-}
-
-void set_dino_char() {
-	// array di caratteri personalizzati su LCD
-	uint8_t sun[8] = {
-			0x00,
-			0x00,
-			0x1C,
-			0x1F,
-			0x1F,
-			0x1F,
-			0x1C,
-			0x00
-	};
-	uint8_t dino_run1[8] = {
-			0x07,
-			0x05,
-			0x07,
-			0x04,
-			0x17,
-			0x1E,
-			0x0E,
-			0x1B
-	};
-	uint8_t dino_run2[8] = {
-			0x07,
-			0x05,
-			0x07,
-			0x04,
-			0x17,
-			0x1E,
-			0x0F,
-			0x0C
-	};
-	uint8_t cactus[8] = {
-			0x04,
-			0x04,
-			0x05,
-			0x15,
-			0x17,
-			0x1C,
-			0x04,
-			0x04
-	};
-	uint8_t dino_duck1[8] = {
-			0x00,
-			0x00,
-			0x03,
-			0x05,
-			0x17,
-			0x1E,
-			0x0F,
-			0x08
-	};
-	uint8_t dino_duck2[8] = {
-			0x00,
-			0x00,
-			0x03,
-			0x05,
-			0x17,
-			0x1E,
-			0x0E,
-			0x12
-	};
-	uint8_t bird_top[8] = {
-			0x00,
-			0x00,
-			0x00,
-			0x00,
-			0x00,
-			0x07,
-			0x0E,
-			0x1C
-	};
-	uint8_t bird_bottom[8] = {
-			0x1C,
-			0x0E,
-			0x00,
-			0x00,
-			0x00,
-			0x00,
-			0x00,
-			0x00
-	};
-	// Define the character on the screen
-	// Printing LCD display image
-	Lcd_define_char(&lcd, 0, sun);
-	Lcd_define_char(&lcd, 1, dino_run1);
-	Lcd_define_char(&lcd, 2, dino_run2);
-	Lcd_define_char(&lcd, 3, dino_duck1);
-	Lcd_define_char(&lcd, 4, dino_duck2);
-	Lcd_define_char(&lcd, 5, cactus);
-	Lcd_define_char(&lcd, 6, bird_top);
-	Lcd_define_char(&lcd, 7, bird_bottom);
-
-}
 
 /**
  * @brief System Clock Configuration
